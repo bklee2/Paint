@@ -1,6 +1,9 @@
+const DEFAULT_LINE_WIDTH = 2.5;
+const DEFAULT_COLOR = "#2c2c2c";
+const DEFAULT_CANVAS_SIZE = 600;
+
 const canvas = document.getElementById('jsCanvas');
 
-let isClicked = false;
 let prevPoint = null;
 function toPoint(e) {
     return e ? { 
@@ -9,38 +12,13 @@ function toPoint(e) {
     } : null;
 }
 
+let painting = false;
+let filling = false;
 
-let mouseDownCnt = 0
-let mouseUpCnt = 0
-
-// function onCanvasMouseMove(e) {
-//     //console.dir(e);
-//     // console.log(x, y);
-    
-//     if(isClicked) {
-//         // const x1 = prevX;
-//         // const y1 = prevY;
-//         // const x2 = e.offsetX;
-//         // const y2 = e.offsetY;
-
-//         // const currentPoint = { 
-//         //     x: e.offsetX,
-//         //     y: e.offsetY,
-//         // };
-//         SetPrevPoint(e);
-
-//         drawLine(prevPoint, currentPoint);
-//         prevPoint = currentPoint;
-//     }
-// }
-
-function drawLine(point1, point2, lineWith = 1) {
+function drawLine(point1, point2) {
     if(!point1 || !point2) {
         return;
     }
-
-    // const btn = document.querySelector('.controls__color');
-    // btn.style.backgroundColor = isClicked ? "rgb(180, 180, 0)" : "rgb(0, 200, 200)";
 
     //https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/lineTo
     const ctx = canvas.getContext('2d');
@@ -48,83 +26,104 @@ function drawLine(point1, point2, lineWith = 1) {
         return;
     }
 
-    const x1 = point1.x;
-    const y1 = point1.y;
-    const x2 = point2.x;
-    const y2 = point2.y;
-
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.lineWidth = lineWith;
+    ctx.beginPath();
+    ctx.moveTo(point1.x, point1.y);
+    ctx.lineTo(point2.x, point2.y);
+    // ctx.lineWidth = lineWith;
+    // ctx.strokeStyle = color;
     ctx.stroke();
+    //ctx.closePath();
 }
 
 function init() {
-    canvas.width = 600;
-    canvas.height = 600;
+    canvas.width = DEFAULT_CANVAS_SIZE;
+    canvas.height = DEFAULT_CANVAS_SIZE;
 
     const ctx = canvas.getContext('2d');
+    ctx.fillStyle = "white";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = DEFAULT_COLOR;
+    ctx.strokeStyle = DEFAULT_COLOR;
+    ctx.lineWidth = DEFAULT_LINE_WIDTH;
+
 
     //canvas.addEventListener('mousemove', onCanvasMouseMove);
-    canvas.addEventListener('mousemove', (e) => {
+    const onCanvasMouseMove = (e) => {
         //console.log('canvas mousemove');
-        if(isClicked) {
+
+        if(painting) {
             const currentPoint = toPoint(e);
             drawLine(prevPoint, currentPoint);
             prevPoint = toPoint(e);
+            return;
         }
-    });
+    }
 
-    // const btn = document.querySelector('.controls__color');
-    // btn.style.backgroundColor = isClicked ? "rgb(180, 180, 0)" : "rgb(0, 200, 200)";
-
-
-    canvas.addEventListener('mousedown', (e) => {
+    const startPainting = (e) => {
         if(e.button == 0) {
-            ++mouseDownCnt;
-            console.log('canvas mousedown', mouseDownCnt);
-
-            isClicked = true;
+            painting = true;
             prevPoint = toPoint(e);
         }
-    });
+    }
 
-    const onMouseUp = (e) => {
+    const stopPainting = (e) => {
         if(e.button == 0) {
-            ++mouseUpCnt;
-            console.log('canvas mouseup ', mouseUpCnt);
-
-            isClicked = false;
+            painting = false;
             prevPoint = null;
         }
     };
-    canvas.addEventListener('mouseup', onMouseUp);
-    canvas.addEventListener('mouseleave', onMouseUp);
 
-    // document.addEventListener('mousedown', (e) => {
-    //     //console.log('document mousedown');
-    //     // console.dir(e);
+    const onMouseDown = (e) => {
+        if(filling) {
+            if(e.button == 0) {
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                stopPainting(e);
+            }
+            
+            return;
+        } else {
+            startPainting(e);
+        }
+    };
+    
+    const onModeClick = (e) => {
+        e.target.innerText = filling ? "fill" : "paint";
+        filling = !filling;
+    };
 
-    //     if(e.button == 0) {
-    //         ++mouseDownCnt;
-    //         console.log('document mousedown', mouseDownCnt);
-    //     }
-    // });
+    const onSaveClick = (e) => {
+        const image = canvas.toDataURL("image/png");
+        const link = document.createElement("a");
+        link.href = image;
+        link.download = "image";
+        link.click();
+    };
 
-    // document.addEventListener('mouseup', (e) => {
-    //     //console.log('document mouseup');
-    //     //console.dir(e);
-    //     // button, buttons, detail, eventPhase, which
+    canvas.addEventListener('mousemove', onCanvasMouseMove);
+    canvas.addEventListener('mousedown', onMouseDown);
+    canvas.addEventListener('mouseup', stopPainting);
+    canvas.addEventListener('mouseleave', stopPainting);
+    // canvas.addEventListener('contextmenu', (e) => e.preventDefault()); // 우클릭 방지
+    
 
-    //     //++mouseUpCnt;
-    //     //console.log(mouseUpCnt, 'document mouseup', e.button, e.buttons, e.detail, e.eventPhase, e.which);
+    // 컬러 버튼 클릭 시 색상 변경 이벤트
+    const colors = document.getElementsByClassName("controls__color");
+    Array.from(colors).forEach(c => c.addEventListener("click", (e) => ctx.fillStyle = ctx.strokeStyle = e.target.style.backgroundColor));
 
-    //     if(e.button == 0) {
-    //         e.preventDefault();
-    //         ++mouseUpCnt;
-    //         //console.log('document mouseup ', mouseUpCnt);
-    //     }
-    // });
+    // 펜 두께 설정 range 컨트롤 이벤트
+    const range = document.getElementById("jsRange");
+    range.addEventListener("input", (e) => ctx.lineWidth = e.target.value);
+    //range.addEventListener("input", (e) => console.log(e.target.value));
+    
+    // 펜으로 그리기, 색 채우기 모드 변경 버튼 이벤트
+    const mode = document.getElementById("jsMode");
+    mode.addEventListener("click", onModeClick);
+    
+    // 펜으로 그리기, 색 채우기 모드 변경 버튼 이벤트
+    const save = document.getElementById("jsSave");
+    save.addEventListener("click", onSaveClick);
+
 }
 
 init();
