@@ -4,36 +4,8 @@ const DEFAULT_CANVAS_SIZE = 600;
 
 const canvas = document.getElementById('jsCanvas');
 
-let prevPoint = null;
-function toPoint(e) {
-    return e ? { 
-        x: e.offsetX,
-        y: e.offsetY,
-    } : null;
-}
-
 let painting = false;
 let filling = false;
-
-function drawLine(point1, point2) {
-    if(!point1 || !point2) {
-        return;
-    }
-
-    //https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/lineTo
-    const ctx = canvas.getContext('2d');
-    if(!ctx) {
-        return;
-    }
-
-    ctx.beginPath();
-    ctx.moveTo(point1.x, point1.y);
-    ctx.lineTo(point2.x, point2.y);
-    // ctx.lineWidth = lineWith;
-    // ctx.strokeStyle = color;
-    ctx.stroke();
-    //ctx.closePath();
-}
 
 function init() {
     canvas.width = DEFAULT_CANVAS_SIZE;
@@ -47,46 +19,30 @@ function init() {
     ctx.strokeStyle = DEFAULT_COLOR;
     ctx.lineWidth = DEFAULT_LINE_WIDTH;
 
-
-    //canvas.addEventListener('mousemove', onCanvasMouseMove);
-    const onCanvasMouseMove = (e) => {
-        //console.log('canvas mousemove');
-
-        if(painting) {
-            const currentPoint = toPoint(e);
-            drawLine(prevPoint, currentPoint);
-            prevPoint = toPoint(e);
+    const onMouseMove = (e) => {
+        if(!e) {
             return;
         }
-    }
-
-    const startPainting = (e) => {
-        if(e.button == 0) {
-            painting = true;
-            prevPoint = toPoint(e);
+        const [x, y] = [e.offsetX, e.offsetY];
+        if (!painting) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+            ctx.stroke();
         }
     }
-
-    const stopPainting = (e) => {
-        if(e.button == 0) {
-            painting = false;
-            prevPoint = null;
-        }
-    };
 
     const onMouseDown = (e) => {
-        if(filling) {
-            if(e.button == 0) {
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                stopPainting(e);
+        if(e.button == 0) {
+            if(filling) {
+                ctx.fillRect(0, 0, canvas.width, canvas.height); // 색 채우기
+            } else {
+                painting = true;
             }
-            
-            return;
-        } else {
-            startPainting(e);
         }
-    };
-    
+    }
+
     const onModeClick = (e) => {
         e.target.innerText = filling ? "fill" : "paint";
         filling = !filling;
@@ -100,11 +56,12 @@ function init() {
         link.click();
     };
 
-    canvas.addEventListener('mousemove', onCanvasMouseMove);
+    // 캔버스 이벤트
+    canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('mousedown', onMouseDown);
-    canvas.addEventListener('mouseup', stopPainting);
-    canvas.addEventListener('mouseleave', stopPainting);
-    // canvas.addEventListener('contextmenu', (e) => e.preventDefault()); // 우클릭 방지
+    canvas.addEventListener('mouseup', (e) => { if(e.button == 0) painting = false; });
+    canvas.addEventListener('mouseleave', (e) => { if(e.button == 0) painting = false; });
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault()); // 우클릭 방지
     
 
     // 컬러 버튼 클릭 시 색상 변경 이벤트
