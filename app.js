@@ -19,6 +19,16 @@ function init() {
     ctx.strokeStyle = DEFAULT_COLOR;
     ctx.lineWidth = DEFAULT_LINE_WIDTH;
 
+    const onMouseDown = (e) => {
+        if(e.button == 0) {
+            if(filling) {
+                ctx.fillRect(0, 0, canvas.width, canvas.height); // 색 채우기
+            } else {
+                painting = true;
+            }
+        }
+    }
+
     const onMouseMove = (e) => {
         if(!e) {
             return;
@@ -33,13 +43,9 @@ function init() {
         }
     }
 
-    const onMouseDown = (e) => {
+    const stopPainting = (e) => {
         if(e.button == 0) {
-            if(filling) {
-                ctx.fillRect(0, 0, canvas.width, canvas.height); // 색 채우기
-            } else {
-                painting = true;
-            }
+            painting = false;
         }
     }
 
@@ -57,12 +63,17 @@ function init() {
     };
 
     // 캔버스 이벤트
-    canvas.addEventListener('mousemove', onMouseMove);
     canvas.addEventListener('mousedown', onMouseDown);
-    canvas.addEventListener('mouseup', (e) => { if(e.button == 0) painting = false; });
-    canvas.addEventListener('mouseleave', (e) => { if(e.button == 0) painting = false; });
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('mouseup', stopPainting);
+    canvas.addEventListener('mouseleave', stopPainting);
     canvas.addEventListener('contextmenu', (e) => e.preventDefault()); // 우클릭 방지
     
+    // 모바일
+    canvas.addEventListener('touchstart', onMouseDown);
+    canvas.addEventListener('touchmove', onMouseMove);
+    canvas.addEventListener('touchend', stopPainting);
+    canvas.addEventListener('touchcancel', stopPainting);
 
     // 컬러 버튼 클릭 시 색상 변경 이벤트
     const colors = document.getElementsByClassName("controls__color");
