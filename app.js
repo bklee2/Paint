@@ -60,13 +60,10 @@ function drawLine(point1, point2, lineWith = 1) {
 }
 
 function init() {
+    canvas.width = 600;
+    canvas.height = 600;
+
     const ctx = canvas.getContext('2d');
-    if(ctx) {
-        ctx.moveTo(0, 0);
-        ctx.lineTo(100, 100);
-        ctx.stroke();
-    }
-    
 
     //canvas.addEventListener('mousemove', onCanvasMouseMove);
     canvas.addEventListener('mousemove', (e) => {
