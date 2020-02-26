@@ -30,10 +30,8 @@ function init() {
     }
 
     const onMouseMove = (e) => {
-        if(!e) {
-            return;
-        }
-        const [x, y] = [e.offsetX, e.offsetY];
+        const x = e.offsetX || (e.touches[0].pageX - e.touches[0].target.offsetLeft);
+        const y = e.offsetY || (e.touches[0].pageY - e.touches[0].target.offsetTop);
         if (!painting) {
             ctx.beginPath();
             ctx.moveTo(x, y);
